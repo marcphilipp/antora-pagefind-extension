@@ -18,6 +18,17 @@ antora:
     - antora-pagefind-extension
 ```
 
+## Excluding pages
+
+As with the Lunr extension, a page that sets the `noindex` attribute in its AsciiDoc header is not indexed.
+To exclude a whole component version, set the attribute in its `antora.yml`:
+
+```yaml
+asciidoc:
+  attributes:
+    noindex: '@'
+```
+
 ## What it does
 
 - Indexes the main content (`<article class="doc">`) of every published page, except pages that set the `noindex` attribute, and publishes the Pagefind bundle to `/pagefind/`.
