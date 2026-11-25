@@ -1,6 +1,7 @@
 'use strict'
 
 const assert = require('node:assert/strict')
+const zlib = require('node:zlib')
 const { test } = require('node:test')
 const { register } = require('..')
 
@@ -12,10 +13,10 @@ const page = (component, version, attributes, body = '<article class="doc"><h1>H
   contents: Buffer.from(`<html lang="en"><body><nav>skip me</nav>${body}</body></html>`),
 })
 
-const filterFiles = async (pages) => {
+const publish = async (pages) => {
   const handlers = {}
   register.call({ getLogger: () => ({ info: () => {} }), on: (name, fn) => (handlers[name] = fn) })
-  const paths = []
+  const files = []
   await handlers.beforePublish({
     playbook: { env: {} },
     contentCatalog: {
@@ -23,10 +24,33 @@ const filterFiles = async (pages) => {
       getComponent: (name) => ({ title: name }),
       getComponentVersion: (_, version) => ({ displayVersion: version }),
     },
-    siteCatalog: { addFile: (file) => paths.push(file.out.path) },
+    siteCatalog: { addFile: (file) => files.push(file) },
   })
-  return paths.filter((it) => it.startsWith('pagefind/filter/')).length
+  return files
 }
+
+const inDir = (files, dir) => files.filter((it) => it.out.path.startsWith(`pagefind/${dir}/`))
+const filterFiles = async (pages) => inDir(await publish(pages), 'filter').length
+const titles = async (pages) =>
+  inDir(await publish(pages), 'fragment')
+    .map((it) => JSON.parse(zlib.gunzipSync(it.contents).toString().replace(/^pagefind_dcd/, '')).meta.title)
+    .sort()
+
+test('appends the filter values that vary to the page titles', async () => {
+  const titled = (component, version, doctitle) => {
+    const it = page(component, version)
+    it.asciidoc.doctitle = doctitle
+    return it
+  }
+  assert.deepEqual(await titles([titled('core', '1.0', 'Using <code>a &amp; "b"</code>'), titled('db', '2.0', 'Intro')]), [
+    'Intro — db 2.0',
+    'Using a & "b" — core 1.0',
+  ])
+  assert.deepEqual(await titles([titled('core', '1.0', 'One'), titled('db', '1.0', 'Two')]), ['One — core', 'Two — db'])
+  // nothing varies, or the page has no doctitle: Pagefind derives the title from the heading
+  assert.deepEqual(await titles([titled('core', '1.0', 'One')]), ['Hello'])
+  assert.deepEqual(await titles([page('core', '1.0'), titled('db', '2.0', 'Two')]), ['Hello', 'Two — db 2.0'])
+})
 
 test('omits filters that have a single value', async () => {
   assert.equal(await filterFiles([page('core', ''), page('core', '')]), 0)

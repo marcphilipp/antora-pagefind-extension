@@ -33,6 +33,7 @@ asciidoc:
 
 - Indexes the main content (`<article class="doc">`) of every published page, except pages that set the `noindex` attribute, and publishes the Pagefind bundle to `/pagefind/`.
 - Tags every page with its component title and version so that results can be filtered by them. A filter that would have a single value for the whole site is omitted.
+- Appends the remaining filter values to the title of every search result, for example "Release Notes — AssertJ Core 3.27".
 - Replaces the search box of the UI (`#search-field`) with the search modal of Pagefind's Component UI. Results link to the matching sections of a page.
 
 To use a different search UI, add a `partials/search-scripts.hbs` file to your UI bundle or supplemental UI; the extension then leaves it alone.
