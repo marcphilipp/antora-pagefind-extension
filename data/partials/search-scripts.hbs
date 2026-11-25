@@ -1,11 +1,12 @@
 <link rel="stylesheet" href="{{{siteRootPath}}}/pagefind/pagefind-component-ui.css">
-<script id="pagefind-ui-script" src="{{{siteRootPath}}}/pagefind/pagefind-component-ui.js"></script>
+<script id="pagefind-ui-script" src="{{{siteRootPath}}}/pagefind/pagefind-component-ui.js" data-component="{{page.component.title}}" data-version="{{#if page.version}}{{page.componentVersion.displayVersion}}{{/if}}"></script>
 <script>
 ;(function () {
   var field = document.getElementById('search-field')
   if (!field) return
   // Pagefind defaults to /pagefind/ which is wrong if the site is not hosted at the root of the domain
-  var bundlePath = new URL('.', document.getElementById('pagefind-ui-script').src).pathname
+  var script = document.getElementById('pagefind-ui-script')
+  var bundlePath = new URL('.', script.src).pathname
   field.innerHTML =
     '<pagefind-config bundle-path="' + bundlePath + '"></pagefind-config>' +
     '<pagefind-modal-trigger placeholder="Search" style="display: block"></pagefind-modal-trigger>' +
@@ -18,5 +19,21 @@
     '</pagefind-modal-body>' +
     '<pagefind-modal-footer><pagefind-keyboard-hints></pagefind-keyboard-hints></pagefind-modal-footer>' +
     '</pagefind-modal>'
+
+  // Search the component version of the current page by default. That is only known to be possible once
+  // the index has loaded: a filter may be missing or lack the value, for example if the page is not indexed.
+  var instance = window.PagefindComponents.getInstanceManager().getInstance()
+  var current = { Component: script.dataset.component, Version: script.dataset.version }
+  var initialized
+  instance.on('filters', function (filters) {
+    if (initialized) return
+    initialized = true
+    var defaults = {}
+    Object.keys(current).forEach(function (name) {
+      if (current[name] && filters.total[name] && current[name] in filters.total[name]) defaults[name] = [current[name]]
+    })
+    // also repeats a search that was started while the index was still loading and so did not use the defaults
+    if (Object.keys(defaults).length) instance.triggerFilters(defaults)
+  })
 })()
 </script>
