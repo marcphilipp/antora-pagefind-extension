@@ -12,6 +12,29 @@ const page = (component, version, attributes, body = '<article class="doc"><h1>H
   contents: Buffer.from(`<html lang="en"><body><nav>skip me</nav>${body}</body></html>`),
 })
 
+const filterFiles = async (pages) => {
+  const handlers = {}
+  register.call({ getLogger: () => ({ info: () => {} }), on: (name, fn) => (handlers[name] = fn) })
+  const paths = []
+  await handlers.beforePublish({
+    playbook: { env: {} },
+    contentCatalog: {
+      getPages: (filter) => pages.filter(filter),
+      getComponent: (name) => ({ title: name }),
+      getComponentVersion: (_, version) => ({ displayVersion: version }),
+    },
+    siteCatalog: { addFile: (file) => paths.push(file.out.path) },
+  })
+  return paths.filter((it) => it.startsWith('pagefind/filter/')).length
+}
+
+test('omits filters that have a single value', async () => {
+  assert.equal(await filterFiles([page('core', ''), page('core', '')]), 0)
+  assert.equal(await filterFiles([page('core', '1.0'), page('core', '2.0')]), 1)
+  assert.equal(await filterFiles([page('core', '1.0'), page('db', '1.0')]), 1)
+  assert.equal(await filterFiles([page('core', '1.0'), page('db', '2.0')]), 2)
+})
+
 test('registers the search UI and publishes a Pagefind bundle', async () => {
   const handlers = {}
   const logged = []
@@ -29,7 +52,7 @@ test('registers the search UI and publishes a Pagefind bundle', async () => {
 
   const pages = [
     page('core', '1.0', {}),
-    page('home', '', {}),
+    page('home', '2.0', {}),
     page('hidden', '1.0', { noindex: '' }),
     page('bare', '1.0', {}, '<p>no main content</p>'),
   ]
@@ -39,7 +62,7 @@ test('registers the search UI and publishes a Pagefind bundle', async () => {
     contentCatalog: {
       getPages: (filter) => pages.filter(filter),
       getComponent: (name) => ({ title: `The "${name}" & co` }),
-      getComponentVersion: () => ({ displayVersion: '1.0' }),
+      getComponentVersion: (_, version) => ({ displayVersion: version }),
     },
     siteCatalog: { addFile: (file) => siteFiles.push(file) },
   })
