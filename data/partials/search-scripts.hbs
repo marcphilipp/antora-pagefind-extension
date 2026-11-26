@@ -13,17 +13,31 @@
     '<pagefind-modal>' +
     '<pagefind-modal-header><pagefind-input></pagefind-input></pagefind-modal-header>' +
     '<pagefind-modal-body>' +
-    '<pagefind-filter-pane style="display: block; margin-bottom: 8px"></pagefind-filter-pane>' +
+    // show-empty: otherwise selecting a value hides all other values of that filter, so no second one could be selected
+    '<pagefind-filter-pane show-empty style="display: block; margin-bottom: 8px"></pagefind-filter-pane>' +
     '<pagefind-summary></pagefind-summary>' +
     '<pagefind-results></pagefind-results>' +
     '</pagefind-modal-body>' +
     '<pagefind-modal-footer><pagefind-keyboard-hints></pagefind-keyboard-hints></pagefind-modal-footer>' +
     '</pagefind-modal>'
 
-  // Search the component version of the current page by default. That is only known to be possible once
-  // the index has loaded: a filter may be missing or lack the value, for example if the page is not indexed.
   var instance = window.PagefindComponents.getInstanceManager().getInstance()
   var current = { Component: script.dataset.component, Version: script.dataset.version }
+
+  // Pagefind requires a page to match all selected values of a filter, but a page only has a single component
+  // and version, so selecting several would never match. The filter components only understand arrays, though.
+  // shortcut: wraps a private method of the Component UI, recheck when upgrading Pagefind
+  var search = instance.__search__
+  instance.__search__ = function (term, filters) {
+    var anyOf = Object.assign({}, filters)
+    Object.keys(current).forEach(function (name) {
+      if (Array.isArray(anyOf[name]) && anyOf[name].length > 1) anyOf[name] = { any: anyOf[name] }
+    })
+    return search.call(this, term, anyOf)
+  }
+
+  // Search the component version of the current page by default. That is only known to be possible once
+  // the index has loaded: a filter may be missing or lack the value, for example if the page is not indexed.
   var initialized
   instance.on('filters', function (filters) {
     if (initialized) return
