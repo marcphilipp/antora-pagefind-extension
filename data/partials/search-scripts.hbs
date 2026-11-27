@@ -1,4 +1,8 @@
 <link rel="stylesheet" href="{{{siteRootPath}}}/pagefind/pagefind-component-ui.css">
+<style>
+/* Touch devices have no keyboard for the shortcut. Pagefind hides its other keyboard hints under the same condition. */
+@media (hover: none) { #search-field .pf-trigger-shortcut { display: none !important } }
+</style>
 <script id="pagefind-ui-script" src="{{{siteRootPath}}}/pagefind/pagefind-component-ui.js" data-component="{{page.component.title}}" data-version="{{#if page.version}}{{page.componentVersion.displayVersion}}{{/if}}"></script>
 <script>
 ;(function () {
