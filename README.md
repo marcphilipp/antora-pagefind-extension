@@ -18,6 +18,20 @@ antora:
     - antora-pagefind-extension
 ```
 
+## Configuration
+
+Both keys are optional and default to what Pagefind does:
+
+```yaml
+antora:
+  extensions:
+    - require: antora-pagefind-extension
+      excerpt_length: 60 # words per excerpt, Pagefind defaults to 30
+      max_sub_results: 5 # matching sections shown per page, Pagefind defaults to 3
+```
+
+They have no effect if the UI provides its own `search-scripts` partial.
+
 ## Excluding pages
 
 As with the Lunr extension, a page that sets the `noindex` attribute in its AsciiDoc header is not indexed.

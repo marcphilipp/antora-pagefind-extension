@@ -116,7 +116,9 @@ test('registers the search UI and publishes a Pagefind bundle', async () => {
   const partial = uiFiles[0].contents.toString()
   const elements = [...new Set(partial.match(/(?<=<)pagefind-[a-z-]+/g))]
   assert.equal(elements.length, 11)
-  for (const used of [...elements.map((it) => `"${it}"`), 'PagefindComponents', 'getInstanceManager', '__search__(', 'triggerFilters(']) {
+  const attributes = partial.match(/(?<= )(excerpt-length|max-sub-results)(?==)/g)
+  assert.equal(attributes.length, 2)
+  for (const used of [...elements, ...attributes].map((it) => `"${it}"`).concat('PagefindComponents', 'getInstanceManager', '__search__(', 'triggerFilters(')) {
     assert.ok(ui.includes(used), `Component UI lacks ${used}`)
   }
 })
@@ -129,4 +131,24 @@ test('keeps the search-scripts partial of the UI', () => {
     addFile: () => assert.fail('must not replace the partial'),
   }
   handlers.uiLoaded({ playbook: { env: {} }, uiCatalog })
+})
+
+test('passes the UI options to the partial', () => {
+  const run = (config) => {
+    const handlers = {}
+    register.call({ getLogger: () => ({}), on: (name, fn) => (handlers[name] = fn) }, { config })
+    const playbook = { env: {} }
+    handlers.uiLoaded({ playbook, uiCatalog: { findByType: () => [], addFile: () => {} } })
+    return playbook.env
+  }
+  assert.deepEqual(run({}), { SITE_SEARCH_PROVIDER: 'pagefind' })
+  assert.deepEqual(run({ excerptLength: 60, maxSubResults: 5 }), {
+    SITE_SEARCH_PROVIDER: 'pagefind',
+    SITE_SEARCH_EXCERPT_LENGTH: 60,
+    SITE_SEARCH_MAX_SUB_RESULTS: 5,
+  })
+  for (const invalid of [0, -1, 1.5, '60"', true]) {
+    assert.throws(() => run({ excerptLength: invalid }), /excerptLength must be a positive integer/)
+    assert.throws(() => run({ maxSubResults: invalid }), /maxSubResults must be a positive integer/)
+  }
 })

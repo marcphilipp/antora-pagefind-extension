@@ -12,7 +12,7 @@
   var script = document.getElementById('pagefind-ui-script')
   var bundlePath = new URL('.', script.src).pathname
   field.innerHTML =
-    '<pagefind-config bundle-path="' + bundlePath + '"></pagefind-config>' +
+    '<pagefind-config bundle-path="' + bundlePath + '"{{#if env.SITE_SEARCH_EXCERPT_LENGTH}} excerpt-length="{{env.SITE_SEARCH_EXCERPT_LENGTH}}"{{/if}}></pagefind-config>' +
     '<pagefind-modal-trigger placeholder="Search" style="display: block"></pagefind-modal-trigger>' +
     '<pagefind-modal>' +
     '<pagefind-modal-header><pagefind-input></pagefind-input></pagefind-modal-header>' +
@@ -20,7 +20,7 @@
     // show-empty: otherwise selecting a value hides all other values of that filter, so no second one could be selected
     '<pagefind-filter-pane show-empty style="display: block; margin-bottom: 8px"></pagefind-filter-pane>' +
     '<pagefind-summary></pagefind-summary>' +
-    '<pagefind-results></pagefind-results>' +
+    '<pagefind-results{{#if env.SITE_SEARCH_MAX_SUB_RESULTS}} max-sub-results="{{env.SITE_SEARCH_MAX_SUB_RESULTS}}"{{/if}}></pagefind-results>' +
     '</pagefind-modal-body>' +
     '<pagefind-modal-footer><pagefind-keyboard-hints></pagefind-keyboard-hints></pagefind-modal-footer>' +
     '</pagefind-modal>'
