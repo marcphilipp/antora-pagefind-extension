@@ -2,6 +2,16 @@
 <style>
 /* Touch devices have no keyboard for the shortcut. Pagefind hides its other keyboard hints under the same condition. */
 @media (hover: none) { #search-field .pf-trigger-shortcut { display: none !important } }
+{{#if env.SITE_SEARCH_EXCERPT_LINES}}
+/* Pagefind cuts excerpts off after a single line. Its CSS resets all properties of its elements, hence !important. */
+pagefind-modal .pf-result-excerpt, pagefind-modal .pf-heading-excerpt {
+  white-space: normal !important;
+  display: -webkit-box !important;
+  -webkit-box-orient: vertical !important;
+  -webkit-line-clamp: {{env.SITE_SEARCH_EXCERPT_LINES}} !important;
+  line-clamp: {{env.SITE_SEARCH_EXCERPT_LINES}} !important;
+}
+{{/if}}
 </style>
 <script id="pagefind-ui-script" src="{{{siteRootPath}}}/pagefind/pagefind-component-ui.js" data-component="{{page.component.title}}" data-version="{{#if page.version}}{{page.componentVersion.displayVersion}}{{/if}}"></script>
 <script>

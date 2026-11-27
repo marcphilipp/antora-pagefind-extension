@@ -15,7 +15,7 @@ const page = (component, version, attributes, body = '<article class="doc"><h1>H
 
 const publish = async (pages) => {
   const handlers = {}
-  register.call({ getLogger: () => ({ info: () => {} }), on: (name, fn) => (handlers[name] = fn) })
+  register.call({ getLogger: () => ({ info: () => {} }), on: (name, fn) => (handlers[name] = fn) }, { config: {} })
   const files = []
   await handlers.beforePublish({
     playbook: { env: {} },
@@ -64,7 +64,7 @@ test('registers the search UI and publishes a Pagefind bundle', async () => {
   register.call({
     getLogger: () => ({ info: (...args) => logged.push(args) }),
     on: (name, fn) => (handlers[name] = fn),
-  })
+  }, { config: {} })
 
   const playbook = { env: {} }
   const uiFiles = []
@@ -125,7 +125,7 @@ test('registers the search UI and publishes a Pagefind bundle', async () => {
 
 test('keeps the search-scripts partial of the UI', () => {
   const handlers = {}
-  register.call({ getLogger: () => ({}), on: (name, fn) => (handlers[name] = fn) })
+  register.call({ getLogger: () => ({}), on: (name, fn) => (handlers[name] = fn) }, { config: {} })
   const uiCatalog = {
     findByType: () => [{ path: 'partials/search-scripts.hbs' }],
     addFile: () => assert.fail('must not replace the partial'),
@@ -134,6 +134,8 @@ test('keeps the search-scripts partial of the UI', () => {
 })
 
 test('passes the UI options to the partial', () => {
+  // Antora calls a register function without parameters without the config
+  assert.equal(register.length, 1)
   const run = (config) => {
     const handlers = {}
     register.call({ getLogger: () => ({}), on: (name, fn) => (handlers[name] = fn) }, { config })
@@ -142,13 +144,15 @@ test('passes the UI options to the partial', () => {
     return playbook.env
   }
   assert.deepEqual(run({}), { SITE_SEARCH_PROVIDER: 'pagefind' })
-  assert.deepEqual(run({ excerptLength: 60, maxSubResults: 5 }), {
+  assert.deepEqual(run({ excerptLength: 60, excerptLines: 3, maxSubResults: 5 }), {
     SITE_SEARCH_PROVIDER: 'pagefind',
     SITE_SEARCH_EXCERPT_LENGTH: 60,
+    SITE_SEARCH_EXCERPT_LINES: 3,
     SITE_SEARCH_MAX_SUB_RESULTS: 5,
   })
   for (const invalid of [0, -1, 1.5, '60"', true]) {
     assert.throws(() => run({ excerptLength: invalid }), /excerptLength must be a positive integer/)
+    assert.throws(() => run({ excerptLines: invalid }), /excerptLines must be a positive integer/)
     assert.throws(() => run({ maxSubResults: invalid }), /maxSubResults must be a positive integer/)
   }
 })

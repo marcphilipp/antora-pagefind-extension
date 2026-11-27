@@ -20,13 +20,14 @@ antora:
 
 ## Configuration
 
-Both keys are optional and default to what Pagefind does:
+All keys are optional and default to what Pagefind does:
 
 ```yaml
 antora:
   extensions:
     - require: antora-pagefind-extension
       excerpt_length: 60 # words per excerpt, Pagefind defaults to 30
+      excerpt_lines: 3 # lines shown per excerpt before it is cut off, Pagefind defaults to 1
       max_sub_results: 5 # matching sections shown per page, Pagefind defaults to 3
 ```
 
