@@ -31,10 +31,9 @@ const publish = async (pages) => {
 
 const inDir = (files, dir) => files.filter((it) => it.out.path.startsWith(`pagefind/${dir}/`))
 const filterFiles = async (pages) => inDir(await publish(pages), 'filter').length
-const titles = async (pages) =>
-  inDir(await publish(pages), 'fragment')
-    .map((it) => JSON.parse(zlib.gunzipSync(it.contents).toString().replace(/^pagefind_dcd/, '')).meta.title)
-    .sort()
+const fragments = (files) =>
+  inDir(files, 'fragment').map((it) => JSON.parse(zlib.gunzipSync(it.contents).toString().replace(/^pagefind_dcd/, '')))
+const titles = async (pages) => fragments(await publish(pages)).map((it) => it.meta.title).sort()
 
 test('appends the filter values that vary to the page titles', async () => {
   const titled = (component, version, doctitle) => {
@@ -101,6 +100,25 @@ test('registers the search UI and publishes a Pagefind bundle', async () => {
   // one filter file per filter name: Component and Version
   assert.equal(paths.filter((it) => it.startsWith('pagefind/filter/')).length, 2)
   assert.ok(siteFiles.every((it) => Buffer.isBuffer(it.contents) && it.pub.url === `/${it.out.path}`))
+
+  const indexed = fragments(siteFiles).sort((a, b) => a.url.localeCompare(b.url))
+  assert.deepEqual(indexed.map((it) => it.filters), [
+    { Component: ['The "core" & co'], Version: ['1.0'] },
+    { Component: ['The "home" & co'], Version: ['2.0'] },
+  ])
+  for (const { content } of indexed) {
+    assert.match(content, /searchable text/)
+    assert.doesNotMatch(content, /skip me/)
+  }
+
+  // the partial relies on these parts of the Component UI, __search__ being private: fail on upgrades that drop them
+  const ui = siteFiles.find((it) => it.out.path === 'pagefind/pagefind-component-ui.js').contents.toString()
+  const partial = uiFiles[0].contents.toString()
+  const elements = [...new Set(partial.match(/(?<=<)pagefind-[a-z-]+/g))]
+  assert.equal(elements.length, 11)
+  for (const used of [...elements.map((it) => `"${it}"`), 'PagefindComponents', 'getInstanceManager', '__search__(', 'triggerFilters(']) {
+    assert.ok(ui.includes(used), `Component UI lacks ${used}`)
+  }
 })
 
 test('keeps the search-scripts partial of the UI', () => {
